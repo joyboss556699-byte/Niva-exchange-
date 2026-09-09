@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIVA EXCHANGE 💦</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 10px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            background: #4CAF50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 12px;
+        }
+        
+        .mail-info {
+            background: rgba(255,193,7,0.2);
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        
+        .section-title {
+            margin: 15px 0 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .coin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .coin-card {
+            background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .coin-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .coin-card.selected {
+            border-color: #FFD700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.5);
+        }
+        
+        .coin-card h3 {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .coin-card p {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+        
+        .username-box {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px dashed #FFD700;
+            text-align: center;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+        }
+        
+        .payment-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .payment-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #4169E1;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .payment-btn:hover, .payment-btn.active {
+            background: #1E90FF;
+            transform: translateY(-2px);
+        }
+        
+        .file-upload {
+            margin-bottom: 15px;
+        }
+        
+        .file-upload label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .file-upload input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            color: #333;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border: none;
+            border-radius: 10px;
+            color: #1e3c72;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .submit-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .menu-section {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .menu-btn {
+            padding: 12px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .main-menu-btn {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            color: #2a5298;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>NIVA EXCHANGE 💦</h1>
+        <div class="status">● সেলিং চালু আছে</div>
+    </div>
+    
+    <div class="mail-info">
+        📌 Mail link 100% acount craet ✅ : https://mailnesia.com/
+    </div>
+    
+    <div id="coinSelection">
+        <div class="section-title">কোন কয়েন বিক্রি করবেন?</div>
+        <div class="coin-grid">
+            <div class="coin-card" data-coin="newtop" data-price="5" data-rate="1000">
+                <h3>New Top</h3>
+                <p>5 টাকা (প্রতি ১০০০)</p>
+            </div>
+            <div class="coin-card selected" data-coin="niva" data-price="4.7" data-rate="1000">
+                <h3>Niva Coin 🔗</h3>
+                <p>4.7 টাকা (প্রতি ১০০)</p>
+            </div>
+            <div class="coin-card" data-coin="ns" data-price="12" data-rate="1000">
+                <h3>Ns coin</h3>
+                <p>12 টাকা (প্রতি ১০০০)</p>
+            </div>
+            <div class="coin-card" data-coin="topfollow" data-price="5" data-rate="1000">
+                <h3>TOP Follow Coin </h3>
+                <p>5 টাকা (প্রতি ১০০)</p>
+            </div>
+        </div>
+        
+        <div class="username-box">
+            📋 ইউজারনেম কপি করুন: <strong id="usernameDisplay">Loading...</strong>
+        </div>
+        
+        <label class="section-title">পরিমাণ (কয়েন সংখ্যা)</label>
+        <input type="number" class="input-field" id="quantity" value="1000" placeholder="কয়েন সংখ্যা লিখুন">
+        
+        <label class="section-title">পেমেন্ট মেথড</label>
+        <div class="payment-methods">
+            <button class="payment-btn" data-method="bikas">Bikas</button>
+            <button class="payment-btn" data-method="nogod">Nogod</button>
+            <button class="payment-btn" data-method="rokat">Rockat</button>
+        </div>
+        
+        <label class="section-title">অ্যাকাউন্ট নাম্বার</label>
+        <input type="text" class="input-field" id="accountNumber" placeholder="বিকাশ/নগদ/রকেট/ব্যাংক নাম্বার">
+        
+        <div class="file-upload">
+            <label>স্ক্রিনশট আপলোড করুন *</label>
+            <input type="file" id="screenshot" accept="image/*">
+            <small style="opacity: 0.8;">📎 প্রমাণ হিসেবে স্ক্রিনশট আপলোড করুন</small>
+        </div>
+        
+        <button class="submit-btn" onclick="submitOrder()">
+            অর্ডার সাবমিট করুন
+        </button>
+    </div>
+    
+    <div class="menu-section">
+        <button class="main-menu-btn" onclick="showMainMenu()">
+            🏠 MAIN MENU
+        </button>
+        
+        <div id="mainMenu" class="hidden">
+            <button class="main-menu-btn" onclick="telegramOpen('help')">
+                🎧 Help Line - 24/7 Support
+            </button>
+            <button class="main-menu-btn" onclick="telegramOpen('channel')">
+                📢 Channel - News & Updates
+            </button>
+            <button class="main-menu-btn" onclick="telegramOpen('proxy')">
+                ️ BUY PROXY - Fast private proxies
+            </button>
+            <button class="main-menu-btn" onclick="telegramOpen('vpn')">
+                🌐 BUY VPN - Secure connections
+            </button>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                <h3 style="margin-bottom: 10px;">| LIVE MARKET</h3>
+                <div class="menu-grid">
+                    <button class="menu-btn" onclick="showCoinSelection()"> MARKET</button>
+                    <button class="menu-btn" onclick="showHistory()">🕘 HISTORY</button>
+                    <button class="menu-btn" onclick="showRefer()">🎁 REFER</button>
+                    <button class="menu-btn" onclick="showTutorial()">▶️ TUTORIAL</button>
+                    <button class="menu-btn" onclick="showLeaders()"> LEADERS</button>
+                    <button class="menu-btn" onclick="showDevInfo()">‍💻 DEV INFO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        let userData = null;
+        let selectedCoin = 'niva';
+        let selectedPrice = 4.7;
+        let selectedMethod = null;
+        
+        // Load user data
+        async function loadUser() {
+            try {
+                const response = await fetch('/api/user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: tg.initDataUnsafe.user || {}
+                    })
+                });
+                const data = await response.json();
+                userData = data.user;
+                document.getElementById('usernameDisplay').textContent = 
+                    userData.username || userData.first_name || 'User';
+            } catch (error) {
+                console.error('Error loading user:', error);
+                document.getElementById('usernameDisplay').textContent = 'User';
+            }
+        }
+        
+        // Coin selection
+        document.querySelectorAll('.coin-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.coin-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedCoin = this.dataset.coin;
+                selectedPrice = parseFloat(this.dataset.price);
+            });
+        });
+        
+        // Payment method selection
+        document.querySelectorAll('.payment-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedMethod = this.dataset.method;
+            });
+        });
+        
+        // Submit order
+        async function submitOrder() {
+            const quantity = document.getElementById('quantity').value;
+            const accountNumber = document.getElementById('accountNumber').value;
+            const screenshot = document.getElementById('screenshot').files[0];
+            
+            if (!quantity || quantity <= 0) {
+                tg.showAlert('পরিমাণ লিখুন!');
+                return;
+            }
+            
+            if (!selectedMethod) {
+                tg.showAlert('পেমেন্ট মেথড সিলেক্ট করুন!');
+                return;
+            }
+            
+            if (!accountNumber) {
+                tg.showAlert('অ্যাকাউন্ট নাম্বার লিখুন!');
+                return;
+            }
+            
+            if (!screenshot) {
+                tg.showAlert('স্ক্রিনশট আপলোড করুন!');
+                return;
+            }
+            
+            const totalAmount = (selectedPrice * quantity / 1000).toFixed(2);
+            
+            const formData = new FormData();
+            formData.append('user_id', userData?.id || tg.initDataUnsafe.user?.id);
+            formData.append('username', userData?.username || '');
+            formData.append('coin', selectedCoin);
+            formData.append('quantity', quantity);
+            formData.append('price_per_1000', selectedPrice);
+            formData.append('total_amount', totalAmount);
+            formData.append('payment_method', selectedMethod);
+            formData.append('account_number', accountNumber);
+            formData.append('screenshot', screenshot);
+            formData.append('timestamp', new Date().toISOString());
+            
+            try {
+                tg.showConfirm(`অর্ডার কনফার্ম করুন:\n\nকয়েন: ${selectedCoin}\nপরিমাণ: ${quantity}\nমোট: ${totalAmount} টাকা`, async (confirmed) => {
+                    if (confirmed) {
+                        // Here you would normally send to server
+                        tg.showAlert('✅ অর্ডার সফলভাবে জমা হয়েছে!\n\nঅ্যাডমিন শীঘ্রই রিভিউ করবে।');
+                        // Reset form
+                        document.getElementById('quantity').value = '1000';
+                        document.getElementById('accountNumber').value = '';
+                        document.getElementById('screenshot').value = '';
+                    }
+                });
+            } catch (error) {
+                tg.showAlert('❌ Error: ' + error.message);
+            }
+        }
+        
+        function showMainMenu() {
+            document.getElementById('mainMenu').classList.toggle('hidden');
+        }
+        
+        function showCoinSelection() {
+            document.getElementById('mainMenu').classList.add('hidden');
+        }
+        
+        function telegramOpen(type) {
+            const links = {
+                'help': 'https://t.me/Sapportotp',
+                'channel': 'https://t.me/yourchannel',
+                'proxy': 'https://t.me/yourproxybot',
+                'vpn': 'https://t.me/yourvpnbot'
+            };
+            if (links[type]) {
+                tg.openLink(links[type]);
+            }
+        }
+        
+        function showHistory() {
+            tg.showAlert('History feature coming soon!');
+        }
+        
+        function showRefer() {
+            tg.showAlert('Refer feature coming soon!');
+        }
+        
+        function showTutorial() {
+            tg.showAlert('Tutorial feature coming soon!');
+        }
+        
+        function showLeaders() {
+            tg.showAlert('Leaders feature coming soon!');
+        }
+        
+        function showDevInfo() {
+            tg.showAlert('Developer: @Sapportotp');
+        }
+        
+        // Initialize
+        loadUser();
+    </script>
+</body>
+</html>
