@@ -1,0 +1,216 @@
+import os
+import asyncio
+import threading
+from datetime import datetime, timezone
+from flask import Flask, jsonify, request, send_from_directory
+import firebase_admin
+from firebase_admin import credentials, firestore
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler, ContextTypes
+
+# ============================================================
+# NIVA EXCHANGE - CONFIGURATION
+# ============================================================
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8892058742:AAG8MLSJiXUQKi9qS6FfVsLq9ao7kWLgn5I")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://joyboss556699-byte.github.io/Niva-exchange-/")
+SERVER_PORT = int(os.getenv("PORT", os.getenv("SERVER_PORT", "22464")))
+ADMIN_IDS = {int(os.getenv("ADMIN_ID", "7294314847"))}
+
+# ============================================================
+# FIREBASE
+# ============================================================
+FIREBASE_CREDENTIALS = {
+    "type": "service_account",
+    "project_id": os.getenv("FIREBASE_PROJECT_ID", "work-store-12def"),
+    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID", "a889eb47166bb695da41d7bb19630df66fee34f9"),
+    "private_key": os.getenv("FIREBASE_PRIVATE_KEY", "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDizMz0OixCoDrO\n2WAZSw8BbbzqvtsuP8PJdXg+Ze+H9UfZs+HzrkTHuljBS1B687xPtxAOUK42Mu1o\nGKMNlWnkEDbukbfD0WOjMXWjlsnghuFPVJOVi6it0FSAM4rMA6b4A9Hk/F51vToI\nEDlTb53r5y0F1U6BgzPt/DmlKmoGWlrf8COxNatkdA91VV+S+3eNBxyr7/UGfIz6\ndxJ2Q9SEFDxC3pT5MHbecxHNC7sB6fy7Rmcn+fJ37AjJTTEy0Q4dtpPAEqsWgdUV\nMNDY6NEiqSXS7/amw0GcRg3gxoPOy5EafBzzg4+BJGErijnHDpJmnZfU1WdbI5ZP\nPavZsvTLAgMBAAECggEAIk1tHu/g0No7esdC3csjQ7PiyQhrzcoZeny4s+CmrVlf\nmsw2UQJbEcWb9e7xBwpFQYiZC5PlUs+PZllPlAGKCKib06fDc6uq67xSeWxthSGG\nrgEclJeRFWo3KvALaUGQ0oiACaen68aJIpNoRY0nWqOA2kCBsAdK5o7pnb2qrTda\nrXkfS78U0J+OJRJbh8JD+jMIN4SA/NbNXfStmOu33MqQWknIY62N96rGHWB3yoDW\nYi0nckFHTu3JKe3QFpwoiopuryOvz8mwGWEDekUBBc8TXdbFPW9KR4ojDnSVypA0\n4C0NstNeIcv2KZnaVVy42ReO7fjks+2Yb5m9xFkkuQKBgQD5OX0aJyCOPWab7JtQ\n3kAj04SWzpVQuQo5v/jkv/uEG1ur+hvSO9LK7McN2L+Fcl2Sm6FZOcWEszXfEfQL\npnEE30pX+pjWtOHRsOhNM+gI4CAgnY7HHJPa8Y9TAzIlztXM6glJDt3Va4Sb/cBb\ncE3bGVw5QnvgiwQeZVg2vDX3EwKBgQDo9z7GJLB/3+uPP1Bc3RZQL/FjBeEZvKh5\ncPXlxNCZbymPmoeFsdXuPF6uvkqnwCWhhH0u5pscQgD30C1ShxzuBGdJQEtj0NF4\nY9HcXYgzvAsv+t+9ULTssx0toiPEyFVXFjbwQRAOnr65ibbpzgPzZr6bh+YSYJPi\n7SrdwkqqaQKBgAPm1ICOUEIpz+ts/tl7QUHOU+sQfOHwo6pXyQu7vbJJw1uj5L+b\n1Cb9IfijhgwOyEw9R39gGimDrLo7S7jK+EX9QOqzr6Tc3BQuUtSylVVePOKF1PBl\nECODWJ0SFbzlyg8VMuQD6ZEnx8GxbUuBLJbbhMgYtFvFkWDwcTsaIzYlAoGBAK2h\nYPLy821LKdjI2o9r5C59nQ4tmpjBCFwCufK3HrXMqRAznyAg7A40hmj8wM2II0Pfa\nCGllCOaefg4+x6QPxqSw5xPxCCvyP9OfmIcf9/3Hetzsn/5/+6OjIevWbNXkGto\nzieAhoQvAn1sS5y0hDNL93IZ9nrp6i7ujs1a+qVJAoGBALJFJEzzGhQOVFqu/RMO\n+Okme1Ursh1o3t9BYbsYDoP5q4t/Kegp2fLQmXcs+B8QU+ma02XqAgddb+mlXYh6\nmwaudfbRzQ05my7R4UvxYeFFdET8nUpeJRPof2Ayr9tmsqdigxyIY+FLhs6u1jVp\nQ01nup5KZ442wWVIAb/UoQ/x\n-----END PRIVATE KEY-----\n"),
+    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL", "firebase-adminsdk-fbsvc@work-store-12def.iam.gserviceaccount.com"),
+    "client_id": os.getenv("FIREBASE_CLIENT_ID", "107205163723631526842"),
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40work-store-12def.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com",
+}
+
+db = None
+
+def init_firebase():
+    global db
+    if firebase_admin._apps:
+        db = firestore.client()
+        return db
+    try:
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("✅ Firebase connected successfully!")
+        return db
+    except Exception as exc:
+        print(" Firebase initialization failed:", exc)
+        return None
+
+init_firebase()
+
+# ============================================================
+# FLASK APP
+# ============================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
+
+# Register panel blueprint
+from panel import panel, set_database, DEFAULT_COINS, DEFAULT_PAYMENT_METHODS
+set_database(db)
+app.register_blueprint(panel)
+
+@app.get("/")
+def index():
+    return send_from_directory(BASE_DIR, "index.html")
+
+@app.get("/api/system-status")
+def get_system_status():
+    """Get current system status (enabled/disabled)"""
+    try:
+        if db:
+            doc = db.collection("system").document("status").get()
+            if doc.exists:
+                return jsonify({"ok": True, "status": doc.to_dict()})
+        
+        # Default status
+        return jsonify({"ok": True, "status": {"enabled": True}})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.get("/api/config")
+def get_config():
+    """Public config: coin rates + payment methods (set from the admin panel)."""
+    try:
+        coins = DEFAULT_COINS
+        payment_methods = DEFAULT_PAYMENT_METHODS
+
+        if db:
+            coins_doc = db.collection("system").document("coins").get()
+            if coins_doc.exists and coins_doc.to_dict().get("list"):
+                coins = coins_doc.to_dict()["list"]
+
+            payments_doc = db.collection("system").document("payments").get()
+            payments_state = payments_doc.to_dict() if payments_doc.exists else {}
+            payment_methods = [
+                {"id": "bikas", "name": "Bikas", "enabled": payments_state.get("bikas", True)},
+                {"id": "nogod", "name": "Nogod", "enabled": payments_state.get("nogod", True)},
+                {"id": "rokat", "name": "Rockat", "enabled": payments_state.get("rokat", True)},
+            ]
+
+        return jsonify({"ok": True, "coins": coins, "paymentMethods": payment_methods})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.post("/api/user")
+def save_user():
+    data = request.get_json(silent=True) or {}
+    user = data.get("user") or {}
+    user_id = str(user.get("id", "")).strip()
+    if not user_id:
+        return jsonify({"ok": False, "error": "Telegram user ID required"}), 400
+    
+    user_data = {
+        "telegram_id": int(user_id),
+        "username": user.get("username", ""),
+        "first_name": user.get("first_name", ""),
+        "last_name": user.get("last_name", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    if db:
+        db.collection("users").document(user_id).set(user_data, merge=True)
+    
+    return jsonify({"ok": True, "user": user_data})
+
+@app.post("/api/order")
+def create_order():
+    try:
+        data = request.form
+        
+        # Check if system is enabled
+        if db:
+            status_doc = db.collection("system").document("status").get()
+            if status_doc.exists and not status_doc.to_dict().get("enabled", True):
+                return jsonify({"ok": False, "error": "System is currently disabled"}), 403
+        
+        order_data = {
+            "user_id": data.get("user_id"),
+            "username": data.get("username"),
+            "instagram_username": data.get("instagram_username"),
+            "coin": data.get("coin"),
+            "quantity": int(data.get("quantity", 0)),
+            "price_per_rate": float(data.get("price_per_rate", 0)),
+            "total_amount": float(data.get("total_amount", 0)),
+            "payment_method": data.get("payment_method"),
+            "account_number": data.get("account_number"),
+            "coupon_code": data.get("coupon_code", ""),
+            "timestamp": data.get("timestamp"),
+            "status": "pending"
+        }
+        
+        if db:
+            db.collection("orders").add(order_data)
+        
+        return jsonify({"ok": True, "message": "Order created successfully"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ============================================================
+# TELEGRAM BOT
+# ============================================================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_user or not update.message:
+        return
+    
+    keyboard = [[InlineKeyboardButton("💦 OPEN NIVA EXCHANGE", web_app=WebAppInfo(url=WEBAPP_URL))]]
+    
+    await update.message.reply_text(
+        "Welcome to NIVA EXCHANGE 💦\n\nOpen the Web App below.",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+def run_web():
+    print(f"🌐 Flask listening on 0.0.0.0:{SERVER_PORT}")
+    if WEBAPP_URL:
+        print(f"🔗 Telegram Web App URL: {WEBAPP_URL}")
+    else:
+        print("️ WEBAPP_URL is not configured.")
+    
+    app.run(
+        host="0.0.0.0",
+        port=SERVER_PORT,
+        debug=False,
+        use_reloader=False,
+        threaded=True,
+    )
+
+async def run_bot():
+    if not BOT_TOKEN or BOT_TOKEN == "PUT_BOT_TOKEN_HERE":
+        print("⚠️ Set BOT_TOKEN before starting the bot.")
+        return
+    
+    application = Application.builder().token(BOT_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    
+    print("✅ Telegram bot started")
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    
+    try:
+        await asyncio.Event().wait()
+    finally:
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
+
+def main():
+    threading.Thread(target=run_web, daemon=True).start()
+    asyncio.run(run_bot())
+
+if __name__ == "__main__":
+    main()
