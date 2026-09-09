@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIVA EXCHANGE 💦</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .user-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .quick-access {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: white;
+            color: #667eea;
+            padding: 18px 25px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .live-market {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .live-market h2 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .market-nav {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .market-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .market-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NIVA EXCHANGE 💦</h1>
+            <p>MARKET APP</p>
+        </div>
+
+        <div class="user-info" id="userInfo">
+            <p>Loading user info...</p>
+        </div>
+
+        <div class="quick-access">
+            <button class="btn" onclick="openHelp()">
+                🎧 Help Line - 24/7 Support
+            </button>
+            <button class="btn" onclick="openChannel()">
+                📢 Channel - News & Updates
+            </button>
+            <button class="btn" onclick="buyProxy()">
+                🛩️ BUY PROXY - Fast private proxies
+            </button>
+            <button class="btn" onclick="buyVPN()">
+                🌐 BUY VPN - Secure connections
+            </button>
+        </div>
+
+        <div class="live-market">
+            <h2>▌ LIVE MARKET</h2>
+            <div class="market-nav">
+                <button class="market-btn" onclick="openMarket()"> MARKET</button>
+                <button class="market-btn" onclick="openHistory()">🕘 HISTORY</button>
+                <button class="market-btn" onclick="openRefer()">🎁 REFER</button>
+                <button class="market-btn" onclick="openTutorial()">▶️ TUTORIAL</button>
+                <button class="market-btn" onclick="openLeaders()">🏆 LEADERS</button>
+                <button class="market-btn" onclick="openDevInfo()">👨‍💻 DEV INFO</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const user = tg.initDataUnsafe.user;
+        
+        if (user) {
+            document.getElementById('userInfo').innerHTML = `
+                <p><strong>Telegram User:</strong> @${user.username || 'N/A'}</p>
+                <p><strong>Name:</strong> ${user.first_name} ${user.last_name || ''}</p>
+            `;
+            
+            // Save user to backend
+            fetch('/api/user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user: user })
+            }).catch(err => console.error('Error saving user:', err));
+        }
+
+        function openHelp() {
+            tg.openLink('https://t.me/your_support_channel');
+        }
+
+        function openChannel() {
+            tg.openLink('https://t.me/your_news_channel');
+        }
+
+        function buyProxy() {
+            tg.showAlert('Proxy purchase feature coming soon!');
+        }
+
+        function buyVPN() {
+            tg.showAlert('VPN purchase feature coming soon!');
+        }
+
+        function openMarket() {
+            tg.showAlert('Market feature coming soon!');
+        }
+
+        function openHistory() {
+            tg.showAlert('History feature coming soon!');
+        }
+
+        function openRefer() {
+            tg.showAlert('Refer feature coming soon!');
+        }
+
+        function openTutorial() {
+            tg.showAlert('Tutorial feature coming soon!');
+        }
+
+        function openLeaders() {
+            tg.showAlert('Leaders feature coming soon!');
+        }
+
+        function openDevInfo() {
+            tg.showAlert('Developer info coming soon!');
+        }
+    </script>
+</body>
+</html>
