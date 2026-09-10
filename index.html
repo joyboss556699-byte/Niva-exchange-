@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIVA EXCHANGE 💦</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root{
+            --bg:#17181b;
+            --surface:#252629;
+            --surface-2:#2b2c30;
+            --border:rgba(255,255,255,.14);
+            --text:#f7f7f9;
+            --muted:#9b9ca5;
+            --blue:#31b8f4;
+            --purple:#9b70ff;
+            --pink:#ff69b4;
+            --green:#35d39a;
+            --danger:#ff5d73;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        html,body{min-height:100%;background:var(--bg)}
+        body{
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            color:var(--text);
+            padding:0 18px 100px;
+            overflow-x:hidden;
+            background:
+              radial-gradient(circle at 10% 0%,rgba(74,46,110,.28),transparent 32%),
+              linear-gradient(180deg,#191a1d 0%,#151619 100%);
+        }
+        button,input{font:inherit}
+        button{border:0}
+        .header{
+            margin:0 -18px 18px;
+            padding:14px 18px 16px;
+            background:#202d3a;
+            border-bottom:1px solid rgba(255,255,255,.06);
+            text-align:left;
+        }
+        .header h1{
+            font-size:20px;font-weight:900;letter-spacing:-.3px;text-align:center;
+            background:linear-gradient(90deg,#31b8f4,#9b70ff,#ff69b4,#31b8f4);
+            background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            text-shadow:0 0 10px rgba(49,184,244,.35),0 0 24px rgba(155,112,255,.25);
+            animation:titleFlow 4s linear infinite;
+        }
+        @keyframes titleFlow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+        .status{display:none}
+        .mail-info{display:none}
+
+        .profile-card{
+            display:flex;align-items:center;gap:14px;
+            margin:0 0 20px;
+            padding:14px;
+            border-radius:24px;
+            background:linear-gradient(135deg,#73527f,#866493);
+            box-shadow:0 12px 28px rgba(0,0,0,.2);
+        }
+        .avatar{
+            width:76px;height:76px;border-radius:18px;flex:0 0 76px;
+            display:grid;place-items:center;
+            background:#64658f;border:2px solid rgba(255,255,255,.5);
+            color:#fff;font-size:34px;overflow:hidden;
+        }
+        .profile-main{min-width:0;flex:1}
+        .profile-stats{display:flex;gap:8px;align-items:stretch;margin-left:auto}
+        .profile-name{font-size:20px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .profile-user{font-size:14px;color:#e5d9e9;margin-top:2px}
+        .debug{font-size:10px;color:#cdbbd2;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .approved,.pending-box{
+            min-width:78px;padding:9px 10px;border:1px solid rgba(255,255,255,.3);
+            border-radius:15px;text-align:center;background:rgba(255,255,255,.1)
+        }
+        .approved small,.pending-box small{display:block;font-size:9px;letter-spacing:1.5px;font-weight:900;color:#eee}
+        .approved strong,.pending-box strong{font-size:28px;line-height:1.1}
+        .pending-box{border-color:rgba(255,190,80,.5);background:rgba(255,190,80,.10)}
+        .pending-box small,.pending-box strong{color:#ffd36a}
+
+        .section{
+            background:transparent;
+            padding:0;
+            margin:0 0 20px;
+            border-radius:0;
+        }
+        .section-title{
+            margin:0 0 11px;
+            padding-left:10px;
+            border-left:4px solid var(--blue);
+            color:#45b9ef;
+            font-size:13px;
+            letter-spacing:1.5px;
+            font-weight:900;
+            text-transform:uppercase;
+        }
+        .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+        @media(max-width:520px){.quick-grid{gap:7px}.quick-btn{min-height:76px;padding:8px 5px}.quick-icon{width:38px!important;height:38px!important;font-size:21px!important;flex-basis:38px!important}.quick-text b{font-size:12px!important}.quick-text span{font-size:9px!important}}
+        .quick-btn{
+            min-height:84px;padding:12px 10px;
+            border:1px solid var(--border);
+            border-radius:20px;
+            color:var(--text);
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            text-align:center;cursor:pointer;
+            box-shadow:0 6px 18px rgba(0,0,0,.12);
+            animation:liveGlow 2s ease-in-out infinite;
+            transition:transform .2s ease, filter .2s ease;
+        }
+        .quick-btn:hover,.quick-btn:active{transform:translateY(-2px) scale(1.02);filter:brightness(1.12)}
+        .quick-btn:nth-child(1){background:linear-gradient(135deg,#153c4d,#1f6f8c);border-color:#31b8f4}
+        .quick-btn:nth-child(2){background:linear-gradient(135deg,#30204b,#7650c8);border-color:#9a72ff}
+        .quick-btn:nth-child(3){background:linear-gradient(135deg,#7a2d55,#d34b8e);border-color:#f16ab6}
+        .quick-btn.wide{grid-column:1/-1}
+        .quick-btn.accent{border-color:#9a72ff;background:linear-gradient(135deg,#262231,#202027)}
+        .quick-icon{
+            width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+            font-size:25px;background:rgba(0,0,0,.18);flex:0 0 46px
+        }
+        .quick-btn:nth-child(2) .quick-icon{background:#30204b}
+        .quick-btn:nth-child(3) .quick-icon{background:#a575ff}
+        .quick-btn:nth-child(4) .quick-icon{background:#2eaedc}
+        .quick-btn:nth-child(5) .quick-icon{background:#f16ab6}
+        .quick-text b{display:block;font-size:14px}
+        .quick-text span{display:block;color:rgba(255,255,255,.75);font-size:10px;margin-top:2px}
+
+        .coin-grid{display:block;margin:0}
+        .coin-card{
+            position:relative;
+            margin-bottom:14px;
+            padding:22px 24px 20px;
+            min-height:190px;
+            border:1px solid rgba(255,255,255,.13);
+            border-radius:24px;
+            background:var(--surface);
+            cursor:pointer;
+            transition:.2s;
+            box-shadow:0 8px 24px rgba(0,0,0,.2);
+        }
+        .coin-card:hover{transform:translateY(-1px)}
+        .coin-card.selected{border-color:#9a72ff;box-shadow:0 0 0 1px rgba(154,114,255,.25),0 10px 28px rgba(0,0,0,.25)}
+        .coin-head{display:flex;align-items:center;gap:16px}
+        .coin-icon{
+            width:70px;height:70px;border-radius:18px;display:grid;place-items:center;
+            background:linear-gradient(135deg,#ec4c82,#bc268b);font-size:39px;flex:0 0 70px
+        }
+        .coin-name{font-size:24px;font-weight:900;letter-spacing:-.5px}
+        .coin-sub{font-size:12px;letter-spacing:2px;color:#999aa2;margin-top:2px}
+        .sell-btn{
+            width:100%;margin-top:18px;padding:13px;border-radius:15px;
+            color:#45f0b0;background:rgba(53,211,154,.12);
+            border:1px solid rgba(53,211,154,.55);font-weight:900;font-size:17px;
+            cursor:pointer;position:relative;overflow:hidden;
+            box-shadow:0 0 7px rgba(53,211,154,.22);
+            animation:sellGlow 1.8s ease-in-out infinite;
+            transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;
+        }
+        .sell-btn:hover,.sell-btn:active{
+            transform:scale(1.02);filter:brightness(1.2);
+            box-shadow:0 0 18px rgba(53,211,154,.75),0 0 34px rgba(49,184,244,.22);
+        }
+        .sell-btn:disabled{opacity:.45;cursor:not-allowed;animation:none}
+        @keyframes sellGlow{
+            0%,100%{box-shadow:0 0 6px rgba(53,211,154,.18),inset 0 0 5px rgba(53,211,154,.03)}
+            50%{box-shadow:0 0 20px rgba(53,211,154,.62),0 0 34px rgba(49,184,244,.18),inset 0 0 12px rgba(53,211,154,.08)}
+        }
+        .coin-card.disabled{opacity:.48;cursor:not-allowed}
+        .coin-card.disabled .sell-btn{color:#aaa}
+        .input-field{
+            width:100%;padding:14px 15px;margin:0 0 14px;
+            border:1px solid var(--border);border-radius:14px;
+            background:#242529;color:#fff;outline:none
+        }
+        .input-field:focus{border-color:#8f68ff}
+        .payment-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+        .payment-btn{
+            padding:13px;border-radius:13px;background:#292a2e;color:#fff;
+            border:1px solid var(--border);cursor:pointer
+        }
+        .payment-btn.active{border-color:#9a72ff;background:#32294a}
+        .payment-btn.disabled{opacity:.4;cursor:not-allowed}
+        .file-upload{margin-bottom:14px}
+        .file-upload label{display:block;margin-bottom:7px;font-size:13px;color:#bbb}
+        .file-upload input[type=file]{width:100%;padding:12px;border-radius:14px;background:#242529;color:#bbb}
+        .rate-display{
+            padding:16px;border-radius:18px;background:#242529;border:1px solid var(--border);
+            margin:10px 0 14px;text-align:center
+        }
+        .rate-display h3{font-size:12px;letter-spacing:1.5px;color:#aaa;margin-bottom:7px}
+        .total-amount{font-size:22px;color:var(--green);font-weight:900}
+        .submit-btn{
+            width:100%;padding:15px;border-radius:15px;background:linear-gradient(135deg,#9c72ff,#6f4eea);
+            color:#fff;font-weight:900;font-size:16px;cursor:pointer
+        }
+        .submit-btn.disabled{opacity:.4;cursor:not-allowed}
+        .menu-section{display:none}
+        .bottom-nav{
+            position:fixed;z-index:50;left:18px;right:18px;bottom:10px;
+            display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+            padding:9px 7px;border:1px solid rgba(49,184,244,.28);
+            border-radius:22px;background:rgba(31,32,35,.96);
+            backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 24px rgba(49,184,244,.12)
+        }
+        .bottom-nav button{
+            padding:8px 4px;border-radius:16px;background:rgba(255,255,255,.025);color:#d7d9df;
+            font-size:10px;font-weight:900;cursor:pointer;position:relative;
+            border:1px solid rgba(49,184,244,.22);
+            animation:liveGlow 2s ease-in-out infinite;
+            transition:transform .2s ease,background .2s ease,color .2s ease
+        }
+        .bottom-nav button:hover,.bottom-nav button:active{transform:translateY(-2px) scale(1.02);background:rgba(49,184,244,.14)}
+        .bottom-nav button.active{color:#fff;background:rgba(49,184,244,.16);border-color:rgba(49,184,244,.75)}
+        .bottom-nav button.active::after{content:'LIVE';position:absolute;top:5px;right:8px;font-size:6px;letter-spacing:.8px;color:#35d39a;animation:liveBlink 1s infinite}
+        .bottom-nav .nav-icon{display:block;font-size:20px;line-height:22px;margin-bottom:2px;filter:drop-shadow(0 0 6px rgba(49,184,244,.65));animation:iconPulse 1.8s ease-in-out infinite}
+        .admin-btn{background:linear-gradient(135deg,#ffd75a,#ffad35)!important;color:#191a1d!important}
+        @keyframes liveGlow{0%,100%{box-shadow:0 0 5px rgba(49,184,244,.14),inset 0 0 8px rgba(49,184,244,.03)}50%{box-shadow:0 0 18px rgba(49,184,244,.55),0 0 32px rgba(155,112,255,.18),inset 0 0 14px rgba(49,184,244,.08)}}
+        @keyframes iconPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 5px rgba(49,184,244,.45))}50%{transform:scale(1.09);filter:drop-shadow(0 0 12px rgba(49,184,244,.9))}}
+        @keyframes liveBlink{0%,100%{opacity:.45}50%{opacity:1}}
+
+        /* Sell Coin page - screenshot-style checkout */
+        .sell-page{
+            position:fixed;inset:0;z-index:200;display:none;
+            overflow-y:auto;padding:0 18px 28px;
+            background:
+              radial-gradient(circle at 10% 0%,rgba(49,184,244,.12),transparent 30%),
+              linear-gradient(180deg,#191a1d 0%,#151619 100%);
+        }
+        .sell-page.show{display:block}
+        .sell-page-header{
+            position:sticky;top:0;z-index:5;
+            margin:0 -18px 18px;padding:14px 18px 16px;
+            background:#202d3a;border-bottom:1px solid rgba(255,255,255,.08);
+            display:flex;align-items:center;gap:12px;
+        }
+        .sell-back{
+            width:40px;height:40px;border-radius:50%;
+            background:#3b3c41;color:#fff;font-size:25px;cursor:pointer;
+            display:grid;place-items:center;
+        }
+        .sell-page-title{font-size:21px;font-weight:900;flex:1}
+        .sell-coin-title{color:#31b8f4}
+        .transfer-box{
+            padding:17px;border:1px solid rgba(49,184,244,.45);
+            border-radius:22px;background:#203d4b;margin-bottom:18px;
+            text-align:center;
+        }
+        .transfer-label{font-size:11px;letter-spacing:2px;color:#31b8f4;font-weight:900;margin-bottom:9px}
+        .transfer-id{font-size:28px;color:#31b8f4;font-weight:900;word-break:break-word}
+        .copy-id-btn{
+            margin-top:11px;padding:10px 17px;border-radius:13px;
+            background:#1faee8;color:#fff;font-weight:900;cursor:pointer;
+        }
+        .sell-label{
+            display:block;margin:0 0 8px;font-size:12px;
+            letter-spacing:1.4px;color:#aaa;font-weight:900;text-transform:uppercase;
+        }
+        .sell-input{
+            width:100%;padding:16px 17px;border:0;border-radius:16px;
+            background:#424348;color:#fff;outline:none;margin-bottom:5px;
+        }
+        .sell-input::placeholder{color:#8d8e95}
+        .sell-hint{font-size:12px;color:#a9aab1;margin:0 2px 15px}
+        #sellPaymentMethods{
+            display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px;
+        }
+        .sell-method{
+            display:flex;align-items:center;gap:10px;padding:13px 11px;
+            border-radius:17px;background:#424348;border:2px solid transparent;
+            color:#fff;cursor:pointer;margin-bottom:10px;
+        }
+        .sell-method.active{border-color:#31b8f4}
+        .sell-method.disabled{opacity:.45;cursor:not-allowed}
+        .sell-method:active{transform:scale(.98)}
+        @media(max-width:390px){
+            #sellPaymentMethods{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+            .sell-method{padding:11px 8px;gap:7px}
+            .sell-method .method-name{font-size:14px}
+    
+        .payment-method-icon{
+            width:49px;height:49px;border-radius:13px;object-fit:cover;
+            background:#fff;display:block;flex:0 0 49px;
+            box-shadow:0 0 12px rgba(49,184,244,.18);
+        }
+        .payment-method-icon.fallback{display:grid;place-items:center;font-size:27px}
+        .method-amount-card{
+            padding:17px;border-radius:18px;background:#424348;margin:12px 0 17px;
+            text-align:center;border:1px solid rgba(49,184,244,.16);
+        }
+        .method-amount-label{font-size:11px;letter-spacing:1.2px;color:#aaa;font-weight:900}
+        .method-amount-value{font-size:27px;color:#31b8f4;font-weight:900;margin-top:5px}
+        .method-rate{font-size:11px;color:#aaa;margin-top:4px}
+        .sell-method-radio{width:21px;height:21px;flex-basis:21px}
+            .binance-logo{width:38px;height:38px;flex-basis:38px;font-size:22px}
+        }
+        .sell-method-radio{
+            width:25px;height:25px;border-radius:50%;border:1px solid #777;
+            display:grid;place-items:center;flex:0 0 25px;
+        }
+        .sell-method.active .sell-method-radio:after{
+            content:"";width:12px;height:12px;border-radius:50%;background:#31b8f4;
+        }
+        .binance-logo{
+            width:49px;height:49px;border-radius:13px;background:#fff;
+            display:grid;place-items:center;font-size:27px;flex:0 0 49px;
+        }
+        .method-name{font-size:17px;font-weight:900}
+        .rate-preview{
+            margin:0 0 12px;padding:14px 15px;border-radius:18px;
+            border:1px solid rgba(49,184,244,.5);background:linear-gradient(135deg,#203d4b,#2c2442);
+            text-align:center;box-shadow:0 0 18px rgba(49,184,244,.15);
+            animation:rateGlow 2s ease-in-out infinite;
+        }
+        .rate-preview small{display:block;color:#9edfff;font-size:10px;letter-spacing:1.5px;font-weight:900}
+        .rate-preview strong{display:block;color:#fff;font-size:22px;margin-top:4px}
+        @keyframes rateGlow{0%,100%{box-shadow:0 0 8px rgba(49,184,244,.12)}50%{box-shadow:0 0 22px rgba(49,184,244,.32)}}
+        .calc-card{
+            padding:17px;border-radius:18px;background:#424348;margin:12px 0 17px;
+        }
+        .calc-row{display:flex;justify-content:space-between;gap:12px;color:#aeb0b7;margin:7px 0}
+        .calc-row strong{color:#fff}
+        .calc-row.fee strong{color:#ff7180}
+        .calc-row.net{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);font-size:21px;font-weight:900}
+        .calc-row.net strong{color:#31b8f4;font-size:24px}
+        .usdt-box{
+            display:none;margin:0 0 15px;padding:13px 15px;border-radius:15px;
+            border:1px solid rgba(49,184,244,.4);background:#203d4b;
+        }
+        .usdt-box.show{display:block}
+        .usdt-box .usdt-value{font-size:22px;color:#31b8f4;font-weight:900}
+        .proof-box{
+            padding:16px;border:1px dashed rgba(49,184,244,.55);
+            border-radius:18px;background:#20303a;margin-bottom:17px;
+        }
+        .proof-title{font-size:17px;font-weight:900;margin-bottom:11px}
+        .upload-btn{
+            width:100%;padding:14px;border-radius:14px;
+            background:#203f50;color:#31b8f4;border:1px solid rgba(49,184,244,.5);
+            font-weight:900;cursor:pointer;
+        }
+        .confirm-sell{
+            width:100%;padding:17px;border-radius:17px;
+            background:linear-gradient(135deg,#24b4ee,#37b9f0);
+            color:#fff;font-size:19px;font-weight:900;cursor:pointer;
+        }
+        .confirm-sell:disabled{opacity:.45;cursor:not-allowed}
+        @media(max-width:390px){
+            .sell-page{padding-left:13px;padding-right:13px}
+            .sell-page-header{margin-left:-13px;margin-right:-13px}
+            .transfer-id{font-size:24px}
+        }
+
+        .hidden{display:none}
+        .info-box{padding:11px 13px;margin:0 0 14px;border-radius:13px;background:#222328;color:#bdbec5;font-size:12px}
+        .form-label{display:block;margin:0 0 7px;font-size:13px;color:#bbb;font-weight:700}
+        .admin-note{margin-top:8px;color:#888;font-size:11px}
+        @media(max-width:390px){
+            .profile-card{gap:9px;padding:11px}
+            .profile-stats{gap:5px}
+            .approved,.pending-box{min-width:62px;padding:7px 6px}
+            .approved strong,.pending-box strong{font-size:24px}
+            body{padding-left:13px;padding-right:13px}
+            .header{margin-left:-13px;margin-right:-13px}
+            .coin-name{font-size:20px}
+            .bottom-nav{left:8px;right:8px}
+        }
+    </style>
+</head>
+<body>
+    <div id="disclaimerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;padding:24px;">
+        <div style="background:#22232a;border-radius:16px;padding:20px;max-width:420px;max-height:80vh;overflow-y:auto;border:1px solid rgba(255,255,255,.14)">
+            <h3 style="margin-bottom:12px;color:#ffd75a">⚠️ Disclaimer</h3>
+            <div id="disclaimerBody" style="font-size:14px;line-height:1.6;color:#d8d9dd;white-space:pre-wrap"></div>
+            <button onclick="document.getElementById('disclaimerModal').style.display='none'" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:#31b8f4;color:#101115;font-weight:700">বুঝেছি</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1 id="appName">NIVA EXCHANGE 💦</h1>
+    </div>
+
+    <div class="profile-card">
+        <div class="avatar">👤</div>
+        <div class="profile-main">
+            <div class="profile-name" id="profileName">Python devaloper</div>
+            <div class="profile-user" id="profileUsername">@Devalopar</div>
+            <div class="debug" id="debugInfo">[debug] TG SDK: found</div>
+        </div>
+        <div class="profile-stats">
+            <div class="approved">
+                <small>APPROVED</small>
+                <strong id="approvedCount">0</strong>
+            </div>
+            <div class="pending-box" id="pendingBox" style="display:none">
+                <small>PENDING</small>
+                <strong id="pendingCount">0</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">QUICK ACCESS</div>
+        <div class="quick-grid">
+            <button class="quick-btn" onclick="openLink(CONFIG.branding.helpLineUrl)">
+                <span class="quick-icon">🎧</span>
+                <span class="quick-text"><b>Help Line</b><span>24/7 Support</span></span>
+            </button>
+            <button class="quick-btn" onclick="openLink(CONFIG.branding.channelUrl)">
+                <span class="quick-icon">📢</span>
+                <span class="quick-text"><b>Channel</b><span>News &amp; Updates</span></span>
+            </button>
+            <button class="quick-btn" onclick="openTutorial()">
+                <span class="quick-icon">▶️</span>
+                <span class="quick-text"><b>Tutorial</b><span>How to Use</span></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="section" id="xr7TaskSection">
+        <div class="section-title">MARKET</div>
+        <div id="coinGrid"></div>
+
+    </div>
+
+    <!-- Sell Coin checkout page -->
+    <div id="sellPage" class="sell-page" aria-hidden="true">
+        <div class="sell-page-header">
+            <button class="sell-back" type="button" onclick="closeSellPage()">‹</button>
+            <div class="sell-page-title">⚡ Sell <span class="sell-coin-title" id="sellPageCoinName">COIN</span></div>
+            <button class="sell-back" type="button" onclick="closeSellPage()">×</button>
+        </div>
+
+        <div class="transfer-box">
+            <div class="transfer-label">⚡ SEND COIN TO THIS TRANSFER ID</div>
+            <div class="transfer-id" id="transferId">ronju_5418</div>
+            <button class="copy-id-btn" type="button" onclick="copyTransferId()">▣ COPY ID</button>
+        </div>
+
+        <div id="coinTargetBox" class="transfer-box" style="margin-top:12px">
+            <div class="transfer-label">📸 COIN TRANSFER USERNAME</div>
+            <div class="transfer-id" id="coinTargetUsername">—</div>
+            <button class="copy-id-btn" type="button" onclick="copyCoinTargetUsername()">▣ COPY USERNAME</button>
+        </div>
+
+        <div id="sellCouponWrap" style="display:none;margin:12px 0">
+            <label class="sell-label">🎟 COUPON CODE</label>
+            <input id="sellCouponCode" class="sell-input" type="text" placeholder="Enter coupon code">
+        </div>
+
+        <label class="sell-label">💰 HOW MANY COINS DO YOU WANT TO SELL?</label>
+        <input id="sellQuantity" class="sell-input" type="number" min="1"
+               placeholder="e.g. 5000 (Min: 5K)" oninput="updateSellCalculation()">
+        <div class="sell-hint">Enter your full coin amount. Example: <b style="color:#31b8f4">5500 = 5,500 coins | 1000000 = 1M coins</b></div>
+
+        <div id="sellUsernameWrap" style="display:none">
+            <input id="sellUsername" class="sell-input" type="hidden">
+        </div>
+
+        <label class="sell-label" style="color:#35d39a">💳 PAYMENT METHOD</label>
+        <div id="sellPaymentMethods"></div>
+
+        <div id="methodAmountBox" class="method-amount-card" style="display:none">
+            <div class="method-amount-label" id="methodAmountLabel">YOU RECEIVE</div>
+            <div class="method-amount-value" id="methodAmountValue">0.00 ৳</div>
+            <div class="method-rate" id="methodAmountRate"></div>
+        </div>
+
+        <div id="binanceUsdtBox" class="usdt-box">
+            <div style="font-size:12px;color:#aaa;letter-spacing:1px;font-weight:900">BINANCE VALUE</div>
+            <div class="usdt-value" id="binanceUsdtValue">0.00 USDT</div>
+            <div style="font-size:11px;color:#9fa0a7;margin-top:4px" id="binanceRateText">1 USDT = 125.00 ৳</div>
+        </div>
+
+        <div class="rate-preview">
+            <small>CURRENT COIN RATE</small>
+            <strong id="sellRatePreview">—</strong>
+        </div>
+
+        <div class="calc-card" id="bdtCalcCard">
+            <div class="calc-row"><span>Coin Unit</span><strong id="sellCoinUnit">—</strong></div>
+            <div class="calc-row"><span>Base Amount</span><strong id="sellBaseAmount">0.00 ৳</strong></div>
+            <div class="calc-row net"><span>Net Payable</span><strong id="sellNetAmount">0.00 ৳</strong></div>
+        </div>
+
+        <div class="proof-box">
+            <div class="proof-title">📸 Proof / Screenshot <span style="float:right;color:#31b8f4;font-size:11px;letter-spacing:1px">REQUIRED</span></div>
+            <input type="file" id="sellScreenshot" accept="image/*" style="display:none">
+            <button class="upload-btn" type="button" onclick="document.getElementById('sellScreenshot').click()">＋ Upload Transfer Screenshot</button>
+            <div id="sellScreenshotName" style="font-size:11px;color:#aaa;margin-top:7px"></div>
+        </div>
+
+        <button class="confirm-sell" id="confirmSellBtn" type="button" onclick="confirmSellOrder()">CONFIRM ORDER →</button>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="active" onclick="navAction('market')"><span class="nav-icon">🏠</span>MARKET</button>
+        <button id="adminBtn" style="display:none" onclick="openAdminPanel()"><span class="nav-icon">⚙️</span>ADMIN</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        const CONFIG = {
+            adminId: 7294314847,
+            // If index.html is hosted separately from the Flask server (e.g. GitHub Pages),
+            // set this to your Flask server's full URL (e.g. "https://your-app.onrender.com").
+            // Leave as "" if index.html is served BY the same Flask app (bot.py) — relative /admin/panel will work.
+            adminPanelBase: "http://fi6.bot-hosting.net:22464",
+            branding: {
+                helpLineUrl: "https://t.me/Sapportotp",
+                channelUrl: "https://t.me/yourchannel",
+                tutorialVideoUrl: "",
+                disclaimer: ""
+            },
+            // Each coin can define its own quantity-based rate tiers, e.g.
+            // 10,000–99,999 coins at one rate, 100,000–200,000 at another, etc.
+            // "price" in a tier = টাকা per `unit` coins (unit defaults to 1000).
+            // requiresUsername: false  -> hides the Instagram username field, shows coupon instead
+            // requiresCoupon: true     -> shows the coupon/code field (used for "Old Top Follow")
+            coins: [
+                { id: "niva", name: "NIVA COIN", icon: "🪙", image: "", enabled: true, unit: 1000, price: 5, rate: 1000, requiresUsername: true, requiresCoupon: false, targetUsername: "", tiers: [{min:1,max:null,price:5}] },
+                { id: "ns", name: "NS COIN", icon: "👤", image: "", enabled: true, unit: 1000, price: 5, rate: 1000, requiresUsername: true, requiresCoupon: false, targetUsername: "", tiers: [{min:1,max:null,price:5}] },
+                { id: "newtopfollow", name: "NEW TOP FOLLOW", icon: "✨", image: "", enabled: true, unit: 1000, price: 5, rate: 1000, requiresUsername: true, requiresCoupon: false, targetUsername: "", tiers: [{min:1,max:null,price:5}] },
+                { id: "topfollow", name: "TOP FOLLOW", icon: "💗", image: "", enabled: true, unit: 1000, price: 5, rate: 1000, requiresUsername: false, requiresCoupon: true, targetUsername: "", tiers: [{min:1,max:null,price:5}] }
+            ],
+            paymentMethods: [
+                { id: "bikas", name: "Bikas", enabled: true },
+                { id: "nogod", name: "Nogod", enabled: true },
+                { id: "rokat", name: "Rockat", enabled: true },
+                { id: "binance", name: "Binance", enabled: true }
+            ],
+            // Admin panel can override this with `binanceRate`.
+            // Example: 1 USDT = 120 BDT => binanceRate: 120
+            binanceRate: 125,
+            sendFee: 5,
+            transferId: "ronju_5418"
+        };
+        
+        let userData = null;
+        let selectedCoin = null;
+        let selectedMethod = null;
+        let systemEnabled = true;
+        
+        // Initialize immediately - no waiting for API
+        function init() {
+            const u = tg.initDataUnsafe.user || {};
+            document.getElementById('debugInfo').textContent = `[debug] TG SDK: found • ID: ${u.id || '—'}`;
+            loadCoins();
+            loadMenuItems();
+            loadLiveMarketMenu();
+            loadUser();
+            
+            // Select first coin by default
+            const firstCard = document.querySelector('.coin-card');
+            if (firstCard && CONFIG.coins.length > 0) {
+                selectCoin(CONFIG.coins[0], firstCard);
+            }
+            
+            // Try to load system status in background (non-blocking)
+            loadSystemStatus();
+            loadRemoteConfig();
+        }
+        
+        // Loads coin/rate ON/OFF settings saved by the admin panel.
+        // Falls back to local defaults when the API is unavailable.
+        async function loadRemoteConfig() {
+            try {
+                const uid = tg.initDataUnsafe.user?.id || '';
+                const response = await fetch('/api/config?uid=' + uid, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data.ok) return;
+                if (Array.isArray(data.coins)) CONFIG.coins = data.coins;
+                if (Array.isArray(data.paymentMethods)) CONFIG.paymentMethods = data.paymentMethods;
+                if (typeof data.binanceRate === 'number' && data.binanceRate > 0) CONFIG.binanceRate = data.binanceRate;
+                if (data.transferId) CONFIG.transferId = String(data.transferId);
+                if (data.branding) CONFIG.branding = Object.assign(CONFIG.branding, data.branding);
+                if (data.appName) document.getElementById('appName').textContent = data.appName;
+                loadCoins();
+                loadPaymentMethods();
+                showDisclaimerIfAny();
+                const first = CONFIG.coins.find(c => c.enabled);
+                if (first) selectCoin(first, document.querySelector('.coin-card'));
+            } catch (e) {
+                console.log('Config API unavailable; using local defaults.');
+            }
+        }
+
+        function showDisclaimerIfAny() {
+            const text = (CONFIG.branding.disclaimer || '').trim();
+            if (!text) return;
+            document.getElementById('disclaimerBody').textContent = text;
+            document.getElementById('disclaimerModal').style.display = 'flex';
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/api/system-status');
+                const data = await response.json();
+                if (data.ok && data.status) {
+                    systemEnabled = data.status.enabled !== false;
+                    updateSystemUI();
+                }
+            } catch (error) {
+                // API failed - keep system enabled by default
+                console.log('System status API not available, using default');
+            }
+        }
+        
+        function updateSystemUI() {
+            const statusEl = document.getElementById('systemStatus');
+            const submitBtn = document.getElementById('submitBtn');
+            if (!statusEl || !submitBtn) return;
+            
+            if (systemEnabled) {
+                statusEl.textContent = '● সিস্টেম সচল';
+                statusEl.classList.remove('disabled');
+                submitBtn.classList.remove('disabled');
+                submitBtn.disabled = false;
+            } else {
+                statusEl.textContent = '✖ সিস্টেম বন্ধ';
+                statusEl.classList.add('disabled');
+                submitBtn.classList.add('disabled');
+                submitBtn.disabled = true;
+            }
+        }
+        
+        function loadCoins() {
+            const grid = document.getElementById('coinGrid');
+            grid.innerHTML = '';
+
+            const enabledCoins = CONFIG.coins.filter(coin => coin.enabled);
+            if (!enabledCoins.length) {
+                grid.innerHTML = '<div class="info-box" style="text-align:center;padding:20px">এই মুহূর্তে কোনো Coin চালু নেই।</div>';
+                return;
+            }
+
+            enabledCoins.forEach((coin) => {
+                const card = document.createElement('div');
+                card.className = 'coin-card' + (!coin.enabled ? ' disabled' : '');
+                const iconHtml = coin.image
+                    ? `<img src="${escapeHtml(coin.image)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`
+                    : (coin.icon || '🪙');
+
+                card.innerHTML = `
+                    <div class="coin-head">
+                        <div class="coin-icon">${iconHtml}</div>
+                        <div>
+                            <div class="coin-name">${escapeHtml(coin.name)}</div>
+                            <div class="coin-sub">MARKET ASSET</div>
+                        </div>
+                    </div>
+                    <button class="sell-btn" type="button" ${coin.enabled ? '' : 'disabled'}>🪙 SELL NOW</button>
+                `;
+
+                if (coin.enabled) {
+                    const sellBtn = card.querySelector('.sell-btn');
+                    card.addEventListener('click', () => {
+                        selectCoin(coin, card);
+                        openSellPage(coin);
+                    });
+                    sellBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectCoin(coin, card);
+                        openSellPage(coin);
+                    });
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, ch => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+            }[ch]));
+        }
+
+        function selectCoin(coin, element) {
+            if (!coin || !coin.enabled) return;
+            selectedCoin = coin;
+            const preview = document.getElementById('sellRatePreview');
+            if (preview) {
+                const firstTier = Array.isArray(coin.tiers) && coin.tiers.length ? coin.tiers[0] : null;
+                preview.textContent = firstTier ? `${Number(firstTier.price || 0).toFixed(2)} ৳ / ${(coin.unit || 1000).toLocaleString()} coins` : 'Rate not set';
+            }
+            document.querySelectorAll('.coin-card').forEach(c => c.classList.remove('selected'));
+            if (element) element.classList.add('selected');
+        }
+
+        function loadPaymentMethods() {
+            const container = document.getElementById('paymentMethods');
+            container.innerHTML = '';
+            
+            CONFIG.paymentMethods.forEach(method => {
+                const btn = document.createElement('button');
+                btn.className = 'payment-btn' + (!method.enabled ? ' disabled' : '');
+                btn.textContent = method.name;
+                btn.dataset.method = method.id;
+                if (method.enabled) {
+                    btn.onclick = () => selectPayment(method.id, btn);
+                }
+                container.appendChild(btn);
+            });
+        }
+        
+        function selectPayment(methodId, btn) {
+            selectedMethod = methodId;
+            document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        
+        // Finds the rate tier that covers this quantity, e.g. 10,000–99,999 or 100,000–200,000.
+        function getTierForQuantity(coin, quantity) {
+            if (!coin || !Array.isArray(coin.tiers)) return null;
+            return coin.tiers.find(t => quantity >= t.min && quantity <= (t.max != null ? t.max : Infinity)) || null;
+        }
+
+        function calculateTotal() {
+            // Legacy form is no longer shown; keep this function for compatibility.
+            return;
+        }
+
+        async function submitOrder() {
+            if (!systemEnabled) {
+                tg.showAlert('❌ সিস্টেম বর্তমানে বন্ধ আছে।');
+                return;
+            }
+            if (!selectedCoin) { tg.showAlert('কয়েন সিলেক্ট করুন!'); return; }
+            
+            const instagramUsername = document.getElementById('instagramUsername').value;
+            const quantity = document.getElementById('quantity').value;
+            const accountNumber = document.getElementById('accountNumber').value;
+            const couponCode = document.getElementById('couponCode').value;
+            const screenshot = document.getElementById('screenshot').files[0];
+            
+            const quantityNum = parseInt(quantity) || 0;
+            const requiresUsername = selectedCoin.requiresUsername !== false;
+
+            if (requiresUsername && !instagramUsername) { tg.showAlert('Instagram ইউজারনেম দিন!'); return; }
+            if (!quantity || quantityNum <= 0) { tg.showAlert('পরিমাণ লিখুন!'); return; }
+            if (!selectedMethod) { tg.showAlert('পেমেন্ট মেথড সিলেক্ট করুন!'); return; }
+            if (!accountNumber) { tg.showAlert('অ্যাকাউন্ট নাম্বার লিখুন!'); return; }
+            if (selectedCoin.requiresCoupon && !couponCode) { tg.showAlert('কুপন কোড দিন!'); return; }
+            if (!screenshot) { tg.showAlert('স্ক্রিনশট আপলোড করুন!'); return; }
+
+            const unit = selectedCoin.unit || 1000;
+            const tier = getTierForQuantity(selectedCoin, quantityNum);
+            if (!tier) { tg.showAlert('এই পরিমাণ কয়েনের জন্য রেট নির্ধারিত নেই!'); return; }
+            const totalAmount = (quantityNum * tier.price / unit).toFixed(2);
+            
+            tg.showConfirm(
+                `অর্ডার কনফার্ম:\n\nকয়েন: ${selectedCoin.name}\nপরিমাণ: ${quantity}\nমোট: ${totalAmount} টাকা`,
+                async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            const formData = new FormData();
+                            formData.append('user_id', tg.initDataUnsafe.user?.id);
+                            formData.append('username', tg.initDataUnsafe.user?.username || '');
+                            formData.append('instagram_username', instagramUsername);
+                            formData.append('coin', selectedCoin.id);
+                            formData.append('quantity', quantity);
+                            formData.append('price_per_rate', tier.price);
+                            formData.append('unit', unit);
+                            formData.append('total_amount', totalAmount);
+                            formData.append('payment_method', selectedMethod);
+                            formData.append('account_number', accountNumber);
+                            formData.append('coupon_code', couponCode || '');
+                            formData.append('screenshot', screenshot);
+                            formData.append('timestamp', new Date().toISOString());
+                            
+                            const response = await fetch('/api/order', { method: 'POST', body: formData });
+                            const result = await response.json();
+                            
+                            if (result.ok) {
+                                tg.showAlert('✅ অর্ডার সফলভাবে জমা হয়েছে!');
+                                resetForm();
+                            } else {
+                                tg.showAlert('❌ Error: ' + (result.error || 'Unknown'));
+                            }
+                        } catch (error) {
+                            tg.showAlert('❌ Error: ' + error.message);
+                        }
+                    }
+                }
+            );
+        }
+        
+
+        function openSellPage(coin) {
+            if (!coin || !coin.enabled) return;
+            selectedCoin = coin;
+
+            document.getElementById('sellPageCoinName').textContent = coin.name || 'COIN';
+            document.getElementById('transferId').textContent = CONFIG.transferId || '—';
+            const target = String(coin.targetUsername || '').trim();
+            document.getElementById('coinTargetUsername').textContent = target || '—';
+            document.getElementById('coinTargetBox').style.display = coin.requiresUsername !== false ? '' : 'none';
+            document.getElementById('sellCouponWrap').style.display = coin.requiresCoupon ? '' : 'none';
+            document.getElementById('sellCouponCode').value = '';
+
+            const user = tg.initDataUnsafe.user || {};
+            document.getElementById('sellUsername').value = user.username ? '@' + user.username : '';
+
+            document.getElementById('sellQuantity').value = String(coin.unit || 1000);
+            document.getElementById('sellScreenshot').value = '';
+            document.getElementById('sellScreenshotName').textContent = '';
+
+            renderSellPaymentMethods();
+            updateSellCalculation();
+
+            const page = document.getElementById('sellPage');
+            page.classList.add('show');
+            page.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSellPage() {
+            const page = document.getElementById('sellPage');
+            page.classList.remove('show');
+            page.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        function renderSellPaymentMethods() {
+            const container = document.getElementById('sellPaymentMethods');
+            container.innerHTML = '';
+            selectedMethod = null;
+
+            CONFIG.paymentMethods.forEach(method => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'sell-method' + (!method.enabled ? ' disabled' : '');
+                const isBinance = method.id === 'binance';
+                const icon = method.image || method.icon || '';
+                const fallback = isBinance ? '🔶' : '💳';
+                btn.innerHTML = `
+                    <span class="sell-method-radio"></span>
+                    ${icon
+                        ? `<img class="payment-method-icon" src="${escapeHtml(icon)}" alt="">`
+                        : `<span class="payment-method-icon fallback">${fallback}</span>`}
+                    <span class="method-name">${escapeHtml(method.name)}</span>
+                `;
+                if (method.enabled) {
+                    btn.onclick = () => selectSellPayment(method.id, btn);
+                }
+                container.appendChild(btn);
+            });
+        }
+
+        function selectSellPayment(methodId, btn) {
+            selectedMethod = methodId;
+            document.querySelectorAll('.sell-method').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateSellCalculation();
+        }
+
+        function updateSellCalculation() {
+            if (!selectedCoin) return;
+
+            const quantity = parseInt(document.getElementById('sellQuantity').value) || 0;
+            const unit = selectedCoin.unit || 1000;
+            const tier = quantity > 0 ? getTierForQuantity(selectedCoin, quantity) : null;
+
+            const base = tier ? quantity * Number(tier.price || 0) / unit : 0;
+
+            const bdtCard = document.getElementById('bdtCalcCard');
+            const amountBox = document.getElementById('methodAmountBox');
+            const amountValue = document.getElementById('methodAmountValue');
+            const amountLabel = document.getElementById('methodAmountLabel');
+            const amountRate = document.getElementById('methodAmountRate');
+            const usdtBox = document.getElementById('binanceUsdtBox');
+            if (!bdtCard || !amountBox || !amountValue || !amountLabel || !amountRate || !usdtBox) return;
+
+            document.getElementById('sellCoinUnit').textContent = `${unit.toLocaleString()} coins`;
+            document.getElementById('sellBaseAmount').textContent = `${base.toFixed(2)} ৳`;
+            document.getElementById('sellNetAmount').textContent = `${base.toFixed(2)} ৳`;
+
+            if (selectedMethod === 'binance') {
+                const rate = Number(CONFIG.binanceRate || 0);
+                const usdt = rate > 0 ? base / rate : 0;
+
+                bdtCard.style.display = 'none';
+                amountBox.style.display = '';
+                amountLabel.textContent = 'YOU RECEIVE';
+                amountValue.textContent = `${usdt.toFixed(2)} USDT`;
+                amountRate.textContent = rate > 0 ? `1 USDT = ${rate.toFixed(2)} ৳` : 'USDT rate not set';
+                usdtBox.classList.add('show');
+                document.getElementById('binanceUsdtValue').textContent = `${usdt.toFixed(2)} USDT`;
+                document.getElementById('binanceRateText').textContent = rate > 0
+                    ? `1 USDT = ${rate.toFixed(2)} ৳`
+                    : 'USDT rate not set';
+            } else {
+                bdtCard.style.display = '';
+                amountBox.style.display = '';
+                amountLabel.textContent = 'YOU RECEIVE';
+                amountValue.textContent = `${base.toFixed(2)} ৳`;
+                amountRate.textContent = 'BDT / টাকা';
+                usdtBox.classList.remove('show');
+            }
+        }
+
+        async function copyCoinTargetUsername() {
+            const id = document.getElementById('coinTargetUsername').textContent;
+            if (!id || id === '—') { tg.showAlert('Username এখনো সেট করা হয়নি।'); return; }
+            try { await navigator.clipboard.writeText(id); tg.showAlert('✅ Username copied!'); }
+            catch (e) { tg.showAlert('Username: ' + id); }
+        }
+
+        async function copyTransferId() {
+            const id = document.getElementById('transferId').textContent;
+            try {
+                await navigator.clipboard.writeText(id);
+                tg.showAlert('✅ Transfer ID copied!');
+            } catch (e) {
+                tg.showAlert('Transfer ID: ' + id);
+            }
+        }
+
+        document.addEventListener('change', (e) => {
+            if (e.target && e.target.id === 'sellScreenshot') {
+                const file = e.target.files[0];
+                document.getElementById('sellScreenshotName').textContent =
+                    file ? '✅ ' + file.name : '';
+            }
+        });
+
+        async function confirmSellOrder() {
+            if (!systemEnabled) {
+                tg.showAlert('❌ সিস্টেম বর্তমানে বন্ধ আছে।');
+                return;
+            }
+            if (!selectedCoin) {
+                tg.showAlert('কয়েন সিলেক্ট করুন!');
+                return;
+            }
+
+            const quantity = parseInt(document.getElementById('sellQuantity').value) || 0;
+            const tgUser = tg.initDataUnsafe.user || {};
+            const senderUsername = tgUser.username ? '@' + tgUser.username : '';
+            const couponCode = document.getElementById('sellCouponCode').value.trim();
+            const screenshot = document.getElementById('sellScreenshot').files[0];
+            const tier = getTierForQuantity(selectedCoin, quantity);
+
+            if (quantity <= 0) {
+                tg.showAlert('❌ কয়েনের পরিমাণ দিন!');
+                return;
+            }
+            if (!tier) {
+                tg.showAlert('❌ এই পরিমাণ কয়েনের জন্য রেট নির্ধারিত নেই!');
+                return;
+            }
+            if (!selectedMethod) {
+                tg.showAlert('❌ Payment Method সিলেক্ট করুন!');
+                return;
+            }
+            if (selectedCoin.requiresCoupon && !couponCode) {
+                tg.showAlert('❌ Coupon Code দিন!');
+                return;
+            }
+            if (!screenshot) {
+                tg.showAlert('❌ Transfer Screenshot আপলোড করুন!');
+                return;
+            }
+
+            const unit = selectedCoin.unit || 1000;
+            const baseAmount = quantity * Number(tier.price || 0) / unit;
+            const fee = 0;
+            const netAmount = baseAmount;
+            const rate = Number(CONFIG.binanceRate || 100);
+            const usdtAmount = selectedMethod === 'binance' && rate > 0 ? baseAmount / rate : 0;
+
+            const summary = selectedMethod === 'binance'
+                ? `অর্ডার কনফার্ম:\\n\\nকয়েন: ${selectedCoin.name}\\nপরিমাণ: ${quantity.toLocaleString()}\\nNet: ${netAmount.toFixed(2)} টাকা\\nBinance: ${usdtAmount.toFixed(2)} USDT`
+                : `অর্ডার কনফার্ম:\\n\\nকয়েন: ${selectedCoin.name}\\nপরিমাণ: ${quantity.toLocaleString()}\\nNet: ${netAmount.toFixed(2)} টাকা`;
+
+            tg.showConfirm(summary, async (confirmed) => {
+                if (!confirmed) return;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('user_id', tg.initDataUnsafe.user?.id || '');
+                    formData.append('username', tg.initDataUnsafe.user?.username || '');
+                    formData.append('sender_username', senderUsername);
+                    formData.append('instagram_username', senderUsername);
+                    formData.append('coin', selectedCoin.id);
+                    formData.append('quantity', quantity);
+                    formData.append('price_per_rate', tier.price);
+                    formData.append('unit', unit);
+                    formData.append('total_amount', netAmount.toFixed(2));
+                    formData.append('base_amount', baseAmount.toFixed(2));
+                    formData.append('send_fee', fee.toFixed(2));
+                    formData.append('payment_method', selectedMethod);
+                    formData.append('binance_rate', selectedMethod === 'binance' ? rate : '');
+                    formData.append('usdt_amount', selectedMethod === 'binance' ? usdtAmount.toFixed(2) : '');
+                    formData.append('transfer_id', CONFIG.transferId || '');
+                    formData.append('target_username', selectedCoin.targetUsername || '');
+                    formData.append('coupon_code', couponCode || '');
+                    formData.append('screenshot', screenshot);
+                    formData.append('timestamp', new Date().toISOString());
+
+                    const response = await fetch('/api/order', { method: 'POST', body: formData });
+                    const result = await response.json();
+
+                    if (result.ok) {
+                        addLocalPendingOrder();
+                        tg.showAlert('✅ অর্ডার Pending হিসেবে জমা হয়েছে। Admin approve করলে Approved-এ চলে যাবে।');
+                        closeSellPage();
+                        resetForm();
+                        loadUser();
+                    } else {
+                        tg.showAlert('❌ Error: ' + (result.error || 'Unknown'));
+                    }
+                } catch (error) {
+                    tg.showAlert('❌ Error: ' + error.message);
+                }
+            });
+        }
+
+        function resetForm() {
+            const q = document.getElementById('sellQuantity');
+            if (q && selectedCoin) q.value = String(selectedCoin.unit || 1000);
+            const shot = document.getElementById('sellScreenshot');
+            if (shot) shot.value = '';
+            const shotName = document.getElementById('sellScreenshotName');
+            if (shotName) shotName.textContent = '';
+            const coupon = document.getElementById('sellCouponCode');
+            if (coupon) coupon.value = '';
+            document.querySelectorAll('.sell-method').forEach(b => b.classList.remove('active'));
+            selectedMethod = null;
+            updateSellCalculation();
+        }
+
+        function loadMenuItems() {
+            const userId = tg.initDataUnsafe.user?.id;
+            if (userId === CONFIG.adminId) {
+                const adminBtn = document.getElementById('adminBtn');
+                adminBtn.style.display = '';
+                adminBtn.classList.add('admin-btn');
+            }
+        }
+
+        function openAdminPanel() {
+            const userId = tg.initDataUnsafe.user?.id;
+            const url = CONFIG.adminPanelBase.replace(/\/$/, '') + '/admin/panel?uid=' + encodeURIComponent(userId || '');
+
+            // একই Telegram WebApp-এর ভিতরেই Admin Panel খুলবে।
+            // openLink()/window.open() ব্যবহার করলে Android "Open with" browser chooser দেখায়।
+            window.location.assign(url);
+        }
+
+        function openLink(link) {
+            if (!link) { tg.showAlert('লিংক এখনো সেট করা হয়নি।'); return; }
+            if (window.Telegram?.WebApp?.openLink) tg.openLink(link);
+            else window.open(link, '_blank');
+        }
+
+        function openTutorial() {
+            if (CONFIG.branding.tutorialVideoUrl) return openLink(CONFIG.branding.tutorialVideoUrl);
+            tg.showAlert('Tutorial video এখনো যোগ করা হয়নি।');
+        }
+
+        function navAction(action) {
+            const messages = {
+                history:'History coming soon!',
+                refer:'Refer coming soon!',
+                leaders:'Leaders coming soon!'
+            };
+            if (action === 'market') return window.scrollTo({top:0, behavior:'smooth'});
+            if (action === 'tutorial') return openTutorial();
+            tg.showAlert(messages[action] || 'Coming soon!');
+        }
+
+        function getLocalPending() {
+            const uid = String(tg.initDataUnsafe.user?.id || 'guest');
+            try { return Math.max(0, parseInt(localStorage.getItem('niva_pending_' + uid)) || 0); }
+            catch (e) { return 0; }
+        }
+
+        function setLocalPending(value) {
+            const uid = String(tg.initDataUnsafe.user?.id || 'guest');
+            try { localStorage.setItem('niva_pending_' + uid, String(Math.max(0, value))); } catch (e) {}
+        }
+
+        function addLocalPendingOrder() {
+            setLocalPending(getLocalPending() + 1);
+            renderPendingCount(getLocalPending());
+        }
+
+        function renderPendingCount(count) {
+            const n = Math.max(0, Number(count) || 0);
+            document.getElementById('pendingCount').textContent = n;
+            document.getElementById('pendingBox').style.display = n > 0 ? '' : 'none';
+        }
+
+        function syncApprovalWithPending(approvedCount) {
+            const uid = String(tg.initDataUnsafe.user?.id || 'guest');
+            const current = Math.max(0, Number(approvedCount) || 0);
+            const pending = getLocalPending();
+            try {
+                const key = 'niva_last_approved_' + uid;
+                const old = parseInt(localStorage.getItem(key));
+                if (Number.isFinite(old) && current > old && pending > 0) {
+                    setLocalPending(Math.max(0, pending - (current - old)));
+                }
+                localStorage.setItem(key, String(current));
+            } catch (e) {}
+            renderPendingCount(getLocalPending());
+        }
+
+        async function loadUser() {
+            try {
+                const response = await fetch('/api/user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: tg.initDataUnsafe.user || {} })
+                });
+                const data = await response.json();
+                userData = data.user;
+                if (userData) {
+                    document.getElementById('profileName').textContent = userData.first_name || userData.name || 'User';
+                    document.getElementById('profileUsername').textContent = userData.username ? '@' + userData.username : '';
+                    const approved = Number(userData.approved_count ?? 0);
+                    document.getElementById('approvedCount').textContent = approved;
+                    // If backend exposes pending_count, use it. Otherwise use local pending
+                    // orders and automatically reduce them when approved_count increases.
+                    if (userData.pending_count !== undefined) {
+                        setLocalPending(Number(userData.pending_count) || 0);
+                    }
+                    syncApprovalWithPending(approved);
+                }
+                if (data.blocked) {
+                    tg.showAlert('❌ আপনার অ্যাকাউন্টটি ব্লক করা হয়েছে। বিস্তারিত জানতে Help Line-এ যোগাযোগ করুন।');
+                }
+            } catch (error) {
+                console.error('User load error:', error);
+                renderPendingCount(getLocalPending());
+            }
+        }
+
+        function toggleMainMenu() {
+            document.getElementById('mainMenu').classList.toggle('hidden');
+        }
+        
+        function handleMenuAction(action) {
+            const actions = {
+                showMarket: () => document.getElementById('mainMenu').classList.add('hidden'),
+                showHistory: () => tg.showAlert('History coming soon!'),
+                showRefer: () => tg.showAlert('Refer coming soon!'),
+                showTutorial: () => tg.showAlert('Tutorial coming soon!')
+            };
+            if (actions[action]) actions[action]();
+        }
+        
+        // Run immediately
+        init();
+    </script>
+</body>
+</html>
