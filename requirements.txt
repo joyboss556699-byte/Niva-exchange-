@@ -1,4 +1,0 @@
-Flask>=3.0,<4
-python-telegram-bot>=21,<23
-firebase-admin>=6.5,<7
-gunicorn>=22,<24
