@@ -1,0 +1,6 @@
+aiogram==2.25.1
+firebase-admin>=6.5,<8
+gspread>=6.1,<7
+google-auth>=2.30,<3
+openpyxl>=3.1,<4
+pyotp>=2.9,<3
