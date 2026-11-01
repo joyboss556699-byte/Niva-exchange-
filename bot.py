@@ -418,18 +418,62 @@ load_withdraw_settings()
 
 # ==================== ফোর্স জয়েন (CACHED) ====================
 
+def normalize_channel(ch):
+    """
+    যেকোনো ফরম্যাট → Telegram API-র জন্য চ্যাট রেফ:
+    https://t.me/xxx  /  t.me/xxx  /  @xxx  /  xxx  → @xxx
+    """
+    s = str(ch or "").strip()
+    if not s:
+        return s
+    s = re.sub(r'^https?://', '', s, flags=re.I)
+    s = re.sub(r'^t\.me/', '', s, flags=re.I)
+    s = s.split('?')[0].split('/')[0].strip()
+    if not s:
+        return str(ch).strip()
+    if s.lstrip("-").isdigit():
+        return s
+    return f"@{s.lstrip('@')}"
+
+
+def channel_join_url(ch):
+    n = normalize_channel(ch)
+    if not n:
+        return None
+    if n.lstrip("-").isdigit():
+        return None
+    return f"https://t.me/{n.lstrip('@')}"
+
+
 def load_force_channels():
     global FORCE_CHANNELS
     try:
         doc = db.collection('settings').document('force_join').get()
         if doc.exists:
-            FORCE_CHANNELS = doc.to_dict().get('channels', [])
+            raw = doc.to_dict().get('channels', []) or []
+            # পুরনো URL ফরম্যাট অটো ঠিক
+            FORCE_CHANNELS = []
+            seen = set()
+            for ch in raw:
+                n = normalize_channel(ch)
+                if n and n not in seen:
+                    seen.add(n)
+                    FORCE_CHANNELS.append(n)
         cache.set("force_channels", FORCE_CHANNELS, ttl=120)
     except Exception:
         pass
 
 def save_force_channels():
     try:
+        # সেভের আগে নরমালাইজ
+        cleaned = []
+        seen = set()
+        for ch in FORCE_CHANNELS:
+            n = normalize_channel(ch)
+            if n and n not in seen:
+                seen.add(n)
+                cleaned.append(n)
+        FORCE_CHANNELS[:] = cleaned
         db.collection('settings').document('force_join').set({'channels': FORCE_CHANNELS})
         cache.set("force_channels", FORCE_CHANNELS, ttl=120)
     except Exception:
@@ -508,65 +552,87 @@ async def check_force_join(user_id, force_refresh=False):
         return True
     if is_admin(user_id):
         return True
-    # ইউজার-প্রতি ৯০ সেকেন্ড ক্যাশ — বারবার Telegram API কল নয়
     ck = f"force_join:{user_id}"
     if not force_refresh:
         cached = cache.get(ck)
         if cached is not None:
             return cached
+
     async def _one(ch):
+        chat_ref = normalize_channel(ch)
         try:
-            member = await bot.get_chat_member(ch, user_id)
+            member = await bot.get_chat_member(chat_ref, user_id)
             return member.status not in ('left', 'kicked')
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Force join check fail ({chat_ref}): {e}")
+            # চ্যাট রেফ ভুল হলে ইউজারকে ব্লক না করে False — join মেসেজ দেখাবে
             return False
+
     results = await asyncio.gather(*[_one(ch) for ch in channels], return_exceptions=True)
     ok = all(r is True for r in results)
-    # ২ সেকেন্ড ক্যাশ — গ্রুপ ছাড়লে প্রায় সঙ্গে সঙ্গে ব্লক
     cache.set(ck, ok, ttl=2)
     return ok
 
 
 async def require_force_join(message, user_id):
     """প্রতি ক্লিকে ফ্রেশ চেক — ছেড়ে দিলে সঙ্গে সঙ্গে Join চাইবে"""
-    cache.delete(f"force_join:{user_id}")
-    if await check_force_join(user_id, force_refresh=True):
-        return True
     try:
-        await message.answer(
-            get_force_join_message(user_id),
-            reply_markup=get_force_join_keyboard(),
-            parse_mode=ParseMode.MARKDOWN
-        )
-    except Exception:
+        cache.delete(f"force_join:{user_id}")
+        if await check_force_join(user_id, force_refresh=True):
+            return True
+    except Exception as e:
+        logger.error(f"require_force_join check error: {e}")
+
+    # সরল টেক্সট — Markdown underscore এরর এড়াতে
+    channels = FORCE_CHANNELS or []
+    if not channels:
+        load_force_channels()
+        channels = FORCE_CHANNELS or []
+    lines = ["⚠️ বট ব্যবহার করতে আগে চ্যানেল/গ্রুপে জয়েন করুন:", ""]
+    for ch in channels:
+        n = normalize_channel(ch)
+        url = channel_join_url(ch)
+        lines.append(f"📌 {n}" + (f"\n{url}" if url else ""))
+    lines.append("")
+    lines.append("১️⃣ Join Channel বাটনে জয়েন করুন")
+    lines.append("২️⃣ তারপর ✅ Verify চাপুন")
+    text = "\n".join(lines)
+    kb = get_force_join_keyboard()
+    try:
+        await message.answer(text, reply_markup=kb)
+    except Exception as e1:
+        logger.error(f"require_force_join answer error: {e1}")
         try:
-            await bot.send_message(
-                user_id,
-                get_force_join_message(user_id),
-                reply_markup=get_force_join_keyboard(),
-                parse_mode=ParseMode.MARKDOWN
-            )
-        except Exception:
-            pass
+            await bot.send_message(user_id, text, reply_markup=kb)
+        except Exception as e2:
+            logger.error(f"require_force_join send error: {e2}")
+            try:
+                await message.answer("⚠️ Please join the required channel, then press Verify.")
+            except Exception:
+                pass
     return False
 
 
 def get_force_join_keyboard():
-    """Join Channel বাটন + Verify বাটন"""
+    """চ্যানেল লিংক = Join বাটন + নিচে Verify"""
     keyboard = InlineKeyboardMarkup(row_width=1)
     channels = FORCE_CHANNELS or []
     if not channels:
         load_force_channels()
         channels = FORCE_CHANNELS or []
     for ch in channels:
-        ch_str = str(ch).strip()
-        ch_clean = ch_str.lstrip("@")
-        # Public username → t.me লিংক; chat ID হলে শুধু লেবেল
-        if ch_clean.lstrip("-").isdigit():
-            keyboard.add(colored_button(f"📌 Join {ch_str}", callback_data="force_join_info", style="primary"))
-        else:
-            keyboard.add(colored_button(f"📌 Join {ch_str}", url=f"https://t.me/{ch_clean}", style="primary"))
-    keyboard.add(colored_button("✅ Verify / যাচাই করুন", callback_data="force_join_verify", style="success"))
+        n = normalize_channel(ch)
+        url = channel_join_url(ch)
+        # ইউজার যেন স্পষ্ট Join বাটন দেখে
+        label = "📢 Join Channel" if len(channels) == 1 else f"📢 Join {n}"
+        try:
+            if url:
+                keyboard.add(InlineKeyboardButton(label, url=url))
+            else:
+                keyboard.add(InlineKeyboardButton(label, callback_data="force_join_info"))
+        except Exception:
+            pass
+    keyboard.add(InlineKeyboardButton("✅ Verify / যাচাই করুন", callback_data="force_join_verify"))
     return keyboard
 
 
@@ -1057,12 +1123,7 @@ async def welcome(message: types.Message):
         )
         return
 
-    if not await check_force_join(user_id):
-        await message.answer(
-            get_force_join_message(user_id),
-            reply_markup=get_force_join_keyboard(),
-            parse_mode=ParseMode.MARKDOWN
-        )
+    if not await require_force_join(message, user_id):
         return
 
     await message.answer(
@@ -2235,14 +2296,13 @@ async def handle_withdraw(callback: types.CallbackQuery):
     await callback.message.edit_text(get_text(user_id, 'withdraw_amount', balance=get_balance(user_id), min_withdraw=MIN_WITHDRAW), reply_markup=cancel_kb, parse_mode=ParseMode.MARKDOWN)
     await callback.answer()
 
-@dp.message_handler(lambda message: message.from_user.id in user_states and user_states[message.from_user.id].startswith("withdraw_amount_"))
+@dp.message_handler(lambda message: (
+    message.from_user.id in user_states
+    and str(user_states.get(message.from_user.id, "")).startswith("withdraw_amount_")
+    and (message.text or "").strip() not in MENU_BUTTON_TEXTS
+))
 async def withdraw_amount(message: types.Message):
     user_id = message.from_user.id
-    # মেনু বাটন চাপলে state ক্লিয়ার — "সঠিক অ্যামাউন্ট" এরর আসবে না
-    if (message.text or "").strip() in MENU_BUTTON_TEXTS:
-        user_states.pop(user_id, None)
-        temp_data.pop(user_id, None)
-        return
     state = user_states[user_id]
     method = state.replace("withdraw_amount_", "")
     try:
@@ -2261,13 +2321,13 @@ async def withdraw_amount(message: types.Message):
     except ValueError:
         await message.answer("❌ সঠিক অ্যামাউন্ট দিন!")
 
-@dp.message_handler(lambda message: message.from_user.id in user_states and user_states[message.from_user.id].startswith("withdraw_account_"))
+@dp.message_handler(lambda message: (
+    message.from_user.id in user_states
+    and str(user_states.get(message.from_user.id, "")).startswith("withdraw_account_")
+    and (message.text or "").strip() not in MENU_BUTTON_TEXTS
+))
 async def withdraw_account(message: types.Message):
     user_id = message.from_user.id
-    if (message.text or "").strip() in MENU_BUTTON_TEXTS:
-        user_states.pop(user_id, None)
-        temp_data.pop(user_id, None)
-        return
     state = user_states.pop(user_id, "")
     data = temp_data.pop(user_id, {})
     method = state.replace("withdraw_account_", "")
@@ -3725,15 +3785,24 @@ async def settings_callback(callback: types.CallbackQuery):
     elif data == "settings_force_join":
         text = "🔗 **ফোর্স জয়েন**\n\n"
         if FORCE_CHANNELS:
+            text += "বর্তমান চ্যানেল/গ্রুপ:\n"
             for ch in FORCE_CHANNELS:
-                text += f"📌 {ch}\n"
+                n = normalize_channel(ch)
+                url = channel_join_url(ch) or n
+                text += f"📌 {n}\n🔗 {url}\n"
         else:
             text += "❌ কোনো চ্যানেল সেট করা নেই\n"
-        text += "\n📌 **যোগ করতে:** `add_channel | @channel`\n"
-        text += "📌 **ডিলিট করতে:** `del_channel | @channel`"
+        text += (
+            "\n📝 **যোগ করতে:** নিচের বাটনে চাপুন, তারপর চ্যানেল লিংক পাঠান\n"
+            "উদাহরণ: `https://t.me/social_media_task_update`\n"
+            "বা: `@social_media_task_update`"
+        )
         keyboard = InlineKeyboardMarkup(row_width=1)
-        keyboard.add(colored_button("🔙 পিছনে", callback_data="admin_panel_back"))
-        await callback.message.reply(text, reply_markup=keyboard)
+        keyboard.add(colored_button("➕ চ্যানেল লিংক যোগ", callback_data="fj_add_link", style="success"))
+        if FORCE_CHANNELS:
+            keyboard.add(colored_button("🗑️ সব চ্যানেল মুছুন", callback_data="fj_clear_all", style="danger"))
+        keyboard.add(colored_button("🔙 পিছনে", callback_data="admin_settings"))
+        await callback.message.reply(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         await callback.answer()
     
     elif data == "settings_ref_commission":
@@ -4005,29 +4074,99 @@ async def handle_admin_video_upload(message: types.Message):
 
 # ==================== ফোর্স জয়েন কমান্ড ====================
 
+@dp.callback_query_handler(lambda c: c.data in ("fj_add_link", "fj_clear_all"))
+async def force_join_admin_actions(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    if not is_admin(user_id):
+        await callback.answer("❌ অ্যাডমিন নন!", show_alert=True)
+        return
+    if callback.data == "fj_clear_all":
+        FORCE_CHANNELS.clear()
+        save_force_channels()
+        await callback.message.answer("✅ সব Force Join চ্যানেল মুছে ফেলা হয়েছে।")
+        await callback.answer()
+        return
+    # fj_add_link
+    user_states[user_id] = "fj_wait_link"
+    kb = InlineKeyboardMarkup().add(colored_button("❌ বাতিল", callback_data="settings_force_join"))
+    await callback.message.answer(
+        "🔗 **চ্যানেল/গ্রুপ লিংক পাঠান:**\n\n"
+        "উদাহরণ:\n"
+        "`https://t.me/social_media_task_update`\n"
+        "`@social_media_task_update`\n\n"
+        "লিংক পেলেই ইউজারদের কাছে **Join** বাটন হিসেবে দেখাবে।",
+        reply_markup=kb,
+        parse_mode=ParseMode.MARKDOWN
+    )
+    await callback.answer()
+
+
+@dp.message_handler(lambda message: user_states.get(message.from_user.id) == "fj_wait_link" and is_admin(message.from_user.id))
+async def force_join_receive_link(message: types.Message):
+    user_id = message.from_user.id
+    raw = (message.text or "").strip()
+    if not raw or raw in MENU_BUTTON_TEXTS:
+        user_states.pop(user_id, None)
+        return
+    channel = normalize_channel(raw)
+    if not channel:
+        await message.answer("❌ সঠিক লিংক দিন!\nউদাহরণ: `https://t.me/your_channel`", parse_mode=ParseMode.MARKDOWN)
+        return
+    existing = {normalize_channel(c) for c in FORCE_CHANNELS}
+    if channel in existing:
+        user_states.pop(user_id, None)
+        await message.answer(f"ℹ️ `{channel}` আগে থেকেই আছে।", parse_mode=ParseMode.MARKDOWN)
+        return
+    FORCE_CHANNELS.append(channel)
+    save_force_channels()
+    user_states.pop(user_id, None)
+    url = channel_join_url(channel) or channel
+    await message.answer(
+        f"✅ Force Join সেট হয়েছে!\n\n"
+        f"📌 চ্যানেল: `{channel}`\n"
+        f"🔗 লিংক: {url}\n\n"
+        f"এখন ইউজাররা Join বাটনে এই লিংক দেখবে।\n"
+        f"⚠️ বটকে এই চ্যানেলে **Admin** রাখুন।",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+
 @dp.message_handler(lambda message: message.text and "add_channel |" in message.text and is_admin(message.from_user.id))
 async def add_force_channel(message: types.Message):
     try:
-        channel = message.text.split("|")[1].strip()
-        if channel not in FORCE_CHANNELS:
-            FORCE_CHANNELS.append(channel)
-            save_force_channels()
-            await message.answer(f"✅ '{channel}' ফোর্স জয়েনে যোগ করা হয়েছে!")
-        else:
-            await message.answer(f"❌ '{channel}' ইতিমধ্যে আছে!")
+        raw = message.text.split("|", 1)[1].strip()
+        channel = normalize_channel(raw)
+        if not channel:
+            await message.answer("❌ সঠিক চ্যানেল দিন!\nউদাহরণ: `add_channel | @social_media_task_update`")
+            return
+        # আগে থেকে URL/username মিল থাকলে স্কিপ
+        existing = {normalize_channel(c) for c in FORCE_CHANNELS}
+        if channel in existing:
+            await message.answer(f"❌ `{channel}` ইতিমধ্যে আছে!")
+            return
+        FORCE_CHANNELS.append(channel)
+        save_force_channels()
+        await message.answer(
+            f"✅ Force Join যোগ হয়েছে: `{channel}`\n\n"
+            f"⚠️ বটকে এই চ্যানেল/গ্রুপে **Admin** রাখুন, নাহলে চেক কাজ করবে না।",
+            parse_mode=ParseMode.MARKDOWN
+        )
     except Exception:
-        await message.answer("❌ ভুল ফরম্যাট! ব্যবহার করুন: `add_channel | @channel`")
+        await message.answer("❌ ভুল ফরম্যাট!\nব্যবহার: `add_channel | @channel`\nবা: `add_channel | https://t.me/channel`")
 
 @dp.message_handler(lambda message: message.text and "del_channel |" in message.text and is_admin(message.from_user.id))
 async def del_force_channel(message: types.Message):
     try:
-        channel = message.text.split("|")[1].strip()
-        if channel in FORCE_CHANNELS:
-            FORCE_CHANNELS.remove(channel)
+        raw = message.text.split("|", 1)[1].strip()
+        channel = normalize_channel(raw)
+        # ম্যাচ করে রিমুভ (URL বা @username যেভাবেই থাকুক)
+        before = len(FORCE_CHANNELS)
+        FORCE_CHANNELS[:] = [c for c in FORCE_CHANNELS if normalize_channel(c) != channel]
+        if len(FORCE_CHANNELS) < before:
             save_force_channels()
-            await message.answer(f"✅ '{channel}' ফোর্স জয়েন থেকে ডিলিট করা হয়েছে!")
+            await message.answer(f"✅ `{channel}` ফোর্স জয়েন থেকে ডিলিট করা হয়েছে!", parse_mode=ParseMode.MARKDOWN)
         else:
-            await message.answer(f"❌ '{channel}' পাওয়া যায়নি!")
+            await message.answer(f"❌ `{channel}` পাওয়া যায়নি!", parse_mode=ParseMode.MARKDOWN)
     except Exception:
         await message.answer("❌ ভুল ফরম্যাট! ব্যবহার করুন: `del_channel | @channel`")
 
